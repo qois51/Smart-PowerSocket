@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <h2>Server IP</h2>
+        <form action="/save" method="get">
+            <input type="hidden" name="ssid" value="" />
+            <input type="hidden" name="pass" value="" />
+            Server IP:<br />
+            <input name="server" value="" /><br /><br />
+            <input type="submit" value="Save & Reboot" />
+        </form>
+
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            document.querySelector("input[name='ssid']").value =
+                params.get("ssid");
+            document.querySelector("input[name='pass']").value =
+                params.get("pass");
+        </script>
+    </body>
+</html>

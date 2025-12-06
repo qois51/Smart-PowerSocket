@@ -1,0 +1,391 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0f0f0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+header h1 {
+    font-size: 1.5rem;
+    color: #fff;
+}
+.status {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+.status.connected { background-color: #2e7d32; color: white; }
+.status.disconnected { background-color: #c62828; color: white; }
+
+/* Card Styles */
+.card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.card-header .icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(76, 175, 80, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.card-header .icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: #4caf50;
+}
+.card-header h2 {
+    font-size: 1.2rem;
+    color: #fff;
+}
+.card-header p {
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-top: 4px;
+}
+
+/* Current Quota Display */
+.quota-display {
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.quota-display label {
+    font-size: 0.85rem;
+    color: #888;
+    display: block;
+    margin-bottom: 8px;
+}
+.quota-display .value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #4fc3f7;
+}
+.quota-display .unit {
+    font-size: 1rem;
+    color: #888;
+    margin-left: 4px;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: #bbb;
+    margin-bottom: 8px;
+}
+.input-group {
+    display: flex;
+    gap: 8px;
+}
+.form-group input[type="number"] {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.form-group input[type="number"]:focus {
+    border-color: #4caf50;
+}
+.form-group input[type="number"]::placeholder {
+    color: #555;
+}
+
+/* Quick Add Buttons */
+.quick-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.quick-btn {
+    padding: 10px 16px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #252525;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+.quick-btn:hover {
+    background: #333;
+    border-color: #4caf50;
+    color: #fff;
+}
+
+/* Submit Button */
+.btn-submit {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+}
+.btn-submit:active {
+    transform: translateY(0);
+}
+.btn-submit:disabled {
+    background: #444;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.btn-submit svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    max-width: 90%;
+    text-align: center;
+}
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.toast.success {
+    background: #2e7d32;
+    color: #fff;
+}
+.toast.error {
+    background: #c62828;
+    color: #fff;
+}
+
+/* Collapsible Card */
+.card-collapsible {
+    padding: 0;
+    overflow: hidden;
+}
+.collapse-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.02);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+    gap: 12px;
+}
+.collapse-header:hover {
+    background: rgba(255,255,255,0.05);
+}
+.collapse-header.active {
+    background: rgba(255,255,255,0.06);
+}
+.collapse-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+.collapse-header-left > div:last-child {
+    flex: 1;
+    min-width: 0;
+}
+.collapse-header h2 {
+    font-size: 1.1rem;
+    color: #fff;
+    margin: 0;
+}
+.collapse-header p {
+    font-size: 0.8rem;
+    color: #888;
+    margin: 4px 0 0 0;
+}
+.collapse-header .icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.collapse-header .icon svg {
+    width: 18px;
+    height: 18px;
+}
+.icon-orange {
+    background: rgba(255, 152, 0, 0.12) !important;
+}
+.icon-orange svg {
+    stroke: #ffb74d !important; /* soft orange to match dark theme */
+}
+/* Subtle state tweaks for better feedback */
+.collapse-header:hover .icon-orange,
+.collapse-header.active .icon-orange {
+    background: rgba(255, 152, 0, 0.18) !important;
+}
+.collapse-header:hover .icon-orange svg,
+.collapse-header.active .icon-orange svg {
+    stroke: #ffcc80 !important;
+}
+.chevron {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    stroke: #aaaaaa;
+    transition: transform 0.3s ease, stroke 0.2s ease;
+}
+.collapse-header.active .chevron {
+    transform: rotate(180deg);
+}
+.collapse-header:hover .chevron, .collapse-header.active .chevron {
+    stroke: #ffffff;
+}
+.collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 24px;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    will-change: max-height;
+    visibility: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
+}
+.collapse-content[hidden] {
+    display: none !important;
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+.collapse-content.show {
+    max-height: 1000px;
+    padding: 0 24px 24px 24px;
+    visibility: visible;
+    opacity: 1;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s 0s;
+}
+.collapse-content-inner {
+    overflow: visible;
+}
+.collapse-content-inner > div:first-child {
+    padding: 0;
+}
+.quota-display-sm {
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.quota-display-sm .value {
+    font-size: 1.8rem;
+}
+.quick-btn-orange:hover {
+    border-color: #ff9800 !important;
+}
+.btn-orange {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+}
+.btn-orange:hover {
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3) !important;
+}
+
+/* Back Link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    transition: color 0.2s;
+}
+.back-link:hover {
+    color: #fff;
+}
+.back-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    body {
+        padding: 16px;
+    }
+    header h1 {
+        font-size: 1.3rem;
+    }
+    .card {
+        padding: 18px;
+    }
+    .quota-display .value {
+        font-size: 2rem;
+    }
+    .quick-btn {
+        flex: 1;
+        min-width: calc(50% - 4px);
+        text-align: center;
+    }
+}

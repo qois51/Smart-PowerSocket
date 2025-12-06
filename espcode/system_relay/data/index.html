@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+    <head>
+        <title>ESP32 Setup</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <h2>Available Wi-Fi Networks</h2>
+        <div id="wifiList">Scanning...</div>
+        <script>
+            fetch("/scan")
+                .then((res) => res.json())
+                .then((list) => {
+                    let html = "";
+                    list.forEach((w) => {
+                        html += `<div class='ssid' onclick="selectSSID('${w.ssid}')">
+           <b>${w.ssid}</b> (${w.rssi} dBm)</div>`;
+                    });
+                    document.getElementById("wifiList").innerHTML = html;
+                });
+            function selectSSID(ssid) {
+                window.location = "/wifi.html?ssid=" + ssid;
+            }
+        </script>
+    </body>
+</html>

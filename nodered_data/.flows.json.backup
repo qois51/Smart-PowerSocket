@@ -1,0 +1,682 @@
+[
+    {
+        "id": "a64e3f52adae430a",
+        "type": "tab",
+        "label": "System",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "21cc205bd493533c",
+        "type": "mqtt-broker",
+        "name": "mosquitto",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "445eded65c8f51ca",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "Something",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://influxdb:8086",
+        "timeout": 10,
+        "rejectUnauthorized": false
+    },
+    {
+        "id": "75eeca81cca08ab0",
+        "type": "mqtt in",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "pzem/data",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "21cc205bd493533c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 120,
+        "y": 720,
+        "wires": [
+            [
+                "931fe88799dcad30",
+                "df4a028823241965"
+            ]
+        ]
+    },
+    {
+        "id": "931fe88799dcad30",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "Insert Data Sensor",
+        "func": "// 1. Tentukan nama Measurement (Nama Tabel di InfluxDB)\nmsg.measurement = \"pzem\"; \n\n// 2. Simpan data asli sementara\nvar raw = msg.payload;\n\n// 3. Susun ulang payload agar menjadi Fields\nmsg.payload = {\n    voltage: raw.voltage,\n    current: raw.current,\n    power: raw.power,\n    energy: raw.energy_dev\n};\n\n// 4. (Opsional) Tambahkan Tags untuk identitas alat\n// Tags berguna jika nanti Anda punya banyak sensor PZEM\nmsg.payload.tags = {\n    lokasi: \"panel_utama\"\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 760,
+        "wires": [
+            [
+                "188429131ddc1563",
+                "37e6a2d958a6d4a4"
+            ]
+        ]
+    },
+    {
+        "id": "37e6a2d958a6d4a4",
+        "type": "debug",
+        "z": "a64e3f52adae430a",
+        "name": "Debug insert",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 670,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "188429131ddc1563",
+        "type": "influxdb out",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Database Insert",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "myorg",
+        "bucket": "iot_data",
+        "x": 660,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "3d7a38a17b11f05d",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 3",
+        "func": "// 1. AMBIL VARIABLE DARI FLOW CONTEXT\n// Pastikan nama key sesuai persis dengan yang Anda set: \"saved_quota\" dan \"energy_devisit\"\nlet savedQuota = flow.get(\"saved_quota\");\nlet energyDevisit = flow.get(\"energy_devisit\");\n\n// 2. VALIDASI & KONVERSI ANGKA\n// Jika variabel belum ada (undefined/null), anggap 0 untuk mencegah hasil NaN\nlet valQuota = parseFloat(savedQuota);\nif (isNaN(valQuota)) valQuota = 0;\n\nlet valDevisit = parseFloat(energyDevisit);\nif (isNaN(valDevisit)) valDevisit = 0;\n\n// 3. LAKUKAN PERHITUNGAN\n// Logic: Remaining = Quota - Devisit\nlet resultRemaining = valQuota - valDevisit;\n\n// -----------------------------------------------------------\n// 4. SUSUN FORMAT UNTUK INFLUXDB\n// -----------------------------------------------------------\n\n// A. Tentukan Measurement (Nama Tabel)\nmsg.measurement = \"energy_balance\";\n\n// B. Tentukan Field dan Value\n// msg.payload harus berupa object { nama_field: nilai }\nmsg.payload = {\n    remaining_quota: resultRemaining\n};\n\n// C. (Opsional) Tambahkan Tags jika perlu\n// msg.tags = { type: \"calculation\" };\n\n\n// 5. STATUS VISUAL NODE (DEBUGGING)\n// Hijau jika sisa positif, Merah jika minus\nconst statusColor = resultRemaining >= 0 ? \"green\" : \"red\";\nnode.status({\n    fill: statusColor, \n    shape: \"dot\", \n    text: `Q:${valQuota} - D:${valDevisit} = ${resultRemaining}`\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 640,
+        "wires": [
+            [
+                "a58430bd8c8bd8af",
+                "0801803de8d4cd6f",
+                "1fdd928498907c3e"
+            ]
+        ]
+    },
+    {
+        "id": "9ecf349fee6f1360",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 4",
+        "func": "// --- BAGIAN 1: BACA DARI DATABASE (SYNC) ---\n// Kita ambil nilai terakhir dari hasil query InfluxDB yang baru masuk\nlet currentDbQuota = 0;\nlet dataFound = false;\n\nif (msg.payload && msg.payload.length > 0 && msg.payload[0]._value != null) {\n    currentDbQuota = parseFloat(msg.payload[0]._value);\n    dataFound = true;\n}\n\n// Jika data ditemukan (misal 1 Miliar), kita paksa update memori Flow\nif (dataFound) {\n    flow.set(\"saved_quota\", currentDbQuota);\n} else {\n    // Jika DB kosong/error, kita coba pakai fallback memori lama\n    currentDbQuota = flow.get(\"saved_quota\") || 0;\n}\n\n\n// --- BAGIAN 2: AMBIL PENGGUNAAN ENERGI ---\n// Asumsi: Variabel 'energy_devisit' diupdate oleh flow lain secara terpisah\n// ke dalam flow context.\nlet energyDevisit = flow.get(\"energy_devisit\");\nif (isNaN(parseFloat(energyDevisit))) energyDevisit = 0;\n\n\n// --- BAGIAN 3: HITUNG HASIL BARU ---\n// Rumus: Saldo Terakhir di DB - Penggunaan Baru\nlet newRemaining = currentDbQuota - energyDevisit;\n\n\n// --- BAGIAN 4: SIMPAN KEMBALI ---\n// Update memori flow agar siap untuk siklus berikutnya\nflow.set(\"saved_quota\", newRemaining);\n\n// Siapkan payload untuk InfluxDB Out\nmsg.measurement = \"energy_balance\";\nmsg.payload = {\n    remaining_quota: newRemaining\n};\n\n// --- STATUS NODE ---\nnode.status({\n    fill: newRemaining >= 0 ? \"green\" : \"red\",\n    shape: \"dot\",\n    text: `DB:${currentDbQuota} - Dev:${energyDevisit} = ${newRemaining}`\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 640,
+        "wires": [
+            [
+                "3d7a38a17b11f05d"
+            ]
+        ]
+    },
+    {
+        "id": "92d9f2b781ccbcae",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 5",
+        "func": "// 1. Definisikan Query Flux yang LEBIH KUAT\nconst fluxQuery = `\nfrom(bucket: \"iot_data\")\n  |> range(start: -90d) // Pastikan range cukup panjang untuk dapat data terakhir\n  |> filter(fn: (r) => r[\"_measurement\"] == \"energy_balance\")\n  |> filter(fn: (r) => r[\"_field\"] == \"remaining_quota\")\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true) // Terpenting: Urutkan dari yg terbaru\n  |> limit(n: 1) // Ambil 1 saja\n`;\n\n// 2. Simpan string query ke properti msg.query\nmsg.query = fluxQuery;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 640,
+        "wires": [
+            [
+                "c24396f89a1d39f8"
+            ]
+        ]
+    },
+    {
+        "id": "c24396f89a1d39f8",
+        "type": "influxdb in",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Database output",
+        "query": "",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "myorg",
+        "x": 720,
+        "y": 640,
+        "wires": [
+            [
+                "9ecf349fee6f1360"
+            ]
+        ]
+    },
+    {
+        "id": "a58430bd8c8bd8af",
+        "type": "influxdb out",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Database Insert",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "myorg",
+        "bucket": "iot_data",
+        "x": 1300,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "df4a028823241965",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 7",
+        "func": "var energy_dev = msg.payload.energy_dev;\n\nflow.set(\"energy_devisit\", energy_dev);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 640,
+        "wires": [
+            [
+                "92d9f2b781ccbcae"
+            ]
+        ]
+    },
+    {
+        "id": "0801803de8d4cd6f",
+        "type": "mqtt out",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "data/energy_remain",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "21cc205bd493533c",
+        "x": 1340,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "5dabf0695c707fc3",
+        "type": "comment",
+        "z": "a64e3f52adae430a",
+        "name": "Graph Stuff",
+        "info": "",
+        "x": 130,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "22845a6a547df37f",
+        "type": "mqtt in",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "graph/request",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "21cc205bd493533c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 130,
+        "y": 140,
+        "wires": [
+            [
+                "386c70670419ca89"
+            ]
+        ]
+    },
+    {
+        "id": "386c70670419ca89",
+        "type": "switch",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "hourly",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "daily",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 330,
+        "y": 140,
+        "wires": [
+            [
+                "a4b10249ac1a4c4d"
+            ],
+            [
+                "a0c1c0b71d87d7d7"
+            ]
+        ]
+    },
+    {
+        "id": "a4b10249ac1a4c4d",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "Hour Aggregat",
+        "func": "// 1. Dapatkan Waktu \"Tengah Malam Hari Ini\" (00:00:00 Local Time)\nconst now = new Date();\n\n// --- MODIFIKASI: Dapatkan Tanggal Hari Ini dalam format yang mudah dibaca ---\n// Contoh: \"Rabu, 3 Desember 2025\"\nconst todayDateString = now.toLocaleDateString('id-ID', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric'\n});\n// --------------------------------------------------------------------------\n\n// Reset jam, menit, detik, ms jadi 0 (untuk keperluan query Flux)\nnow.setHours(0, 0, 0, 0);\n\n// Konversi ke format ISO String (InfluxDB butuh format UTC/Zulu)\nconst midnightISO = now.toISOString();\n\n// 2. Susun Query Flux\nmsg.query = `\nfrom(bucket: \"iot_data\")\n  |> range(start: time(v: \"${midnightISO}\"), stop: now())\n  |> filter(fn: (r) => r[\"_measurement\"] == \"pzem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"energy\")\n  |> aggregateWindow(every: 1h, fn: spread, createEmpty: true)\n  |> fill(value: 0.0)\n  |> yield(name: \"daily_usage\")\n`;\n\n// --- MODIFIKASI: Tambahkan Tanggal Hari Ini ke Output msg ---\nmsg.date = todayDateString;\n// ------------------------------------------------------------\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 100,
+        "wires": [
+            [
+                "e86bf7a384c0d1dd"
+            ]
+        ]
+    },
+    {
+        "id": "a0c1c0b71d87d7d7",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "Daily Aggregat",
+        "func": "// 1. Tentukan Waktu Awal Bulan (Start of Month)\nconst now = new Date();\n\n// --- MODIFIKASI: Dapatkan Nama Bulan Sekarang ---\n// Menggunakan 'id-ID' (Indonesia) agar output: \"Desember\"\nconst currentMonthName = now.toLocaleDateString('id-ID', { month: 'long' });\n// ---------------------------------------------------\n\n// Set ke Tahun ini, Bulan ini, Tanggal 1, Jam 00:00:00\n// (Menggunakan Waktu Lokal server/laptop Anda)\nconst startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);\n\n// Konversi ke format ISO String (UTC) agar dimengerti InfluxDB\nconst startIso = startOfMonth.toISOString();\n\n\n// 2. Susun Query Flux\nmsg.query = `\nfrom(bucket: \"iot_data\")\n  // Start dari tanggal 1 bulan ini, Stop sekarang\n  |> range(start: time(v: \"${startIso}\"), stop: now())\n  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"pzem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"energy\")\n  \n  // Agregat setiap 1 hari (1d) menggunakan spread (selisih kWh)\n  |> aggregateWindow(every: 1d, fn: spread, createEmpty: true)\n  \n  // Isi data kosong dengan 0\n  |> fill(value: 0.0)\n  \n  |> yield(name: \"monthly_usage\")\n`;\n\n// --- MODIFIKASI: Tambahkan Nama Bulan ke Output msg ---\nmsg.monthName = currentMonthName;\n// ---------------------------------------------------\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 180,
+        "wires": [
+            [
+                "e86bf7a384c0d1dd"
+            ]
+        ]
+    },
+    {
+        "id": "e86bf7a384c0d1dd",
+        "type": "influxdb in",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Read Data",
+        "query": "",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "myorg",
+        "x": 770,
+        "y": 140,
+        "wires": [
+            [
+                "1e72a1b50df9900d"
+            ]
+        ]
+    },
+    {
+        "id": "1e72a1b50df9900d",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "Format",
+        "func": "// Ambil data mentah dari InfluxDB\nconst rawData = msg.payload;\n\nlet labels = [];\nlet datasetData = [];\n\n// --- MODIFIKASI: Dapatkan Judul dari msg.date (dari Node Function sebelumnya) ---\n// Asumsikan msg.date sudah diset di Node Function sebelum InfluxDB\nconst graphTitle = msg.date || \"Data Penggunaan\";\n// --------------------------------------------------------------------------------\n\n// Pastikan data adalah Array dan tidak kosong\nif (Array.isArray(rawData) && rawData.length > 0) {\n    \n    // Cek Mode (Harian vs Jam)\n    let startTime = new Date(rawData[0]._time).getTime();\n    let endTime = new Date(rawData[rawData.length - 1]._time).getTime();\n    let isDaily = (endTime - startTime) > (25 * 3600 * 1000);\n\n    // Loop setiap baris data\n    rawData.forEach(point => {\n        // 1. Ambil Value\n        let val = parseFloat(point._value);\n        if (isNaN(val)) val = 0;\n        datasetData.push(val.toFixed(2));\n\n        // 2. Format Label Waktu (DENGAN TIMEZONE FIX)\n        let date = new Date(point._time);\n        let label = \"\";\n        \n        // Opsi Format Waktu Lokal\n        const timeZone = 'Asia/Jakarta'; \n\n        if (isDaily) {\n            // Format Harian: \"27 Nov\"\n            label = date.toLocaleDateString('id-ID', { \n                day: 'numeric', \n                month: 'short',\n                timeZone: timeZone \n            });\n        } else {\n            // Format Jam: \"15:00\" \n            label = date.toLocaleTimeString('id-ID', {\n                hour: '2-digit', \n                minute: '2-digit',\n                hour12: false,\n                timeZone: timeZone \n            });\n            \n            label = label.replace('.', ':'); \n        }\n        \n        labels.push(label);\n    });\n}\n\n// --- MODIFIKASI: Sertakan Judul (Tanggal/Bulan) ke Payload ---\nmsg.payload = {\n    title: graphTitle, // Tambahkan properti title baru\n    labels: labels,\n    data: datasetData\n};\n// ---------------------------------------------------------------\n\n// Karena Anda ingin mengirim ke MQTT, pastikan properti msg.topic sudah diset \n// (atau set di node MQTT Out)\n// msg.topic = \"graph/response\";\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 140,
+        "wires": [
+            [
+                "ece43e93fd60d22b"
+            ]
+        ]
+    },
+    {
+        "id": "ece43e93fd60d22b",
+        "type": "mqtt out",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "graph/response",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "21cc205bd493533c",
+        "x": 1160,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "a1d8afdd781b3d93",
+        "type": "mqtt in",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "admin/add_quota",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "21cc205bd493533c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 340,
+        "wires": [
+            [
+                "a869cc97280830df"
+            ]
+        ]
+    },
+    {
+        "id": "a869cc97280830df",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 6",
+        "func": "// 1. Ambil Nilai Top Up dengan Deteksi Tipe Data\nlet addAmount = 0;\n\nif (typeof msg.payload === 'object' && msg.payload !== null) {\n    // KASUS A: Payload adalah JSON Object (misal: {\"value\": 500} atau {\"add_quota\": 500})\n    // Kita cari properti mana yang berisi angka. Sesuaikan nama key dengan yang Anda kirim.\n    // Kode di bawah mencoba mencari key 'value', 'add_quota', atau 'amount'.\n    const val = msg.payload.value || msg.payload.add_quota || msg.payload.amount;\n    addAmount = parseFloat(val);\n    \n    // Debugging: Intip isi object di console\n    // node.warn(\"Menerima Object: \" + JSON.stringify(msg.payload)); \n    \n} else {\n    // KASUS B: Payload adalah Angka/String Murni (misal: 500)\n    addAmount = parseFloat(msg.payload);\n}\n\n// Validasi Akhir\nif (isNaN(addAmount)) {\n    node.error(\"Nilai Top Up GAGAL diproses. Payload: \" + JSON.stringify(msg.payload));\n    return null; // Stop flow\n}\n\n// ----------------------------------------------------\n// ... LANJUTKAN DENGAN KODE LOGIKA TOP UP ANDA ...\n// ----------------------------------------------------\n\n// 2. Ambil Kondisi Terakhir dari Memori\nlet currentSavedQuota = flow.get(\"saved_quota\") || 0; \nlet currentDevisit = flow.get(\"energy_devisit\") || 0;\n\n// 3. Lakukan Penambahan\nlet newSavedQuota = currentSavedQuota + addAmount;\nlet newRemaining = newSavedQuota - currentDevisit;\n\n// 4. Update Memori & Output\nflow.set(\"saved_quota\", newSavedQuota); \n\nconst msgInflux = {\n    measurement: \"energy_balance\",\n    payload: { remaining_quota: newRemaining }\n};\n\nconst msgMqtt = {\n    topic: \"data/energy_remain\",\n    payload: newRemaining.toFixed(2),\n    retain: true \n};\n\nnode.status({fill:\"blue\", shape:\"dot\", text:`TopUp: +${addAmount} -> Sisa: ${newRemaining}`});\n\nreturn [msgInflux, msgMqtt];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 340,
+        "wires": [
+            [
+                "7340921bbf586dd7"
+            ],
+            [
+                "dcce75ce81fff7e3"
+            ]
+        ]
+    },
+    {
+        "id": "7340921bbf586dd7",
+        "type": "influxdb out",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Database Insert",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "myorg",
+        "bucket": "iot_data",
+        "x": 680,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "dcce75ce81fff7e3",
+        "type": "mqtt out",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "data/energy_remain",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "21cc205bd493533c",
+        "x": 680,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "1fdd928498907c3e",
+        "type": "switch",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "property": "payload.remaining_quota",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lte",
+                "v": "0",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1290,
+        "y": 560,
+        "wires": [
+            [
+                "083e17df608caca0"
+            ]
+        ]
+    },
+    {
+        "id": "083e17df608caca0",
+        "type": "change",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "OFF",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1460,
+        "y": 560,
+        "wires": [
+            [
+                "30f26b7906534543"
+            ]
+        ]
+    },
+    {
+        "id": "30f26b7906534543",
+        "type": "rbe",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 1610,
+        "y": 560,
+        "wires": [
+            [
+                "06a61f3cd8694b10"
+            ]
+        ]
+    },
+    {
+        "id": "06a61f3cd8694b10",
+        "type": "mqtt out",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "relay/set",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "21cc205bd493533c",
+        "x": 1760,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "f4aada454af9db87",
+        "type": "mqtt in",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "admin/set_quota",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "21cc205bd493533c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 440,
+        "wires": [
+            [
+                "37458f52cb0d5b33"
+            ]
+        ]
+    },
+    {
+        "id": "37458f52cb0d5b33",
+        "type": "function",
+        "z": "a64e3f52adae430a",
+        "name": "function 8",
+        "func": "// 1. Ambil Nilai Input dengan Deteksi Tipe Data\nlet setAmount = 0; // Kita sebut setAmount karena ini nilai absolut\n\nif (typeof msg.payload === 'object' && msg.payload !== null) {\n    // Cari value di dalam object\n    const val = msg.payload.value || msg.payload.add_quota || msg.payload.amount || msg.payload.set_quota;\n    setAmount = parseFloat(val);\n} else {\n    // Payload adalah angka murni\n    setAmount = parseFloat(msg.payload);\n}\n\n// Validasi Akhir\nif (isNaN(setAmount)) {\n    node.error(\"Nilai Set Quota GAGAL diproses. Payload: \" + JSON.stringify(msg.payload));\n    return null; // Stop flow\n}\n\n// ----------------------------------------------------\n// LOGIKA \"TIMPA LANGSUNG\" (SET/RESET QUOTA)\n// ----------------------------------------------------\n\n// 2. Ambil Energy Devisit Terakhir dari Memori\n// Kita tetap butuh nilai ini karena kWh meter di PZEM tidak bisa di-reset ke 0.\n// Kita harus menyesuaikan 'saved_quota' agar sinkron dengan devisit yang berjalan.\nlet currentDevisit = flow.get(\"energy_devisit\") || 0;\n\n// 3. Tentukan Sisa Quota Baru\n// Sesuai permintaan: Nilai yang didapat langsung jadi sisa quota.\nlet newRemaining = setAmount;\n\n// 4. Hitung Mundur 'Saved Quota' (Kalibrasi)\n// Agar rumus di flow utama (Remaining = Saved - Devisit) tetap valid:\n// Maka: Saved = Remaining + Devisit\nlet newSavedQuota = newRemaining + currentDevisit;\n\n// 5. Update Memori\n// Kita simpan nilai 'saved_quota' yang baru hasil kalibrasi tadi\nflow.set(\"saved_quota\", newSavedQuota); \n\n// 6. Siapkan Output\n// Kirim angka 'setAmount' (newRemaining) langsung ke InfluxDB & MQTT\nconst msgInflux = {\n    measurement: \"energy_balance\",\n    payload: { remaining_quota: newRemaining }\n};\n\nconst msgMqtt = {\n    topic: \"data/energy_remain\",\n    payload: newRemaining.toFixed(2),\n    retain: true \n};\n\nnode.status({fill:\"green\", shape:\"dot\", text:`Quota Reset to: ${newRemaining}`});\n\nreturn [msgInflux, msgMqtt];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 440,
+        "wires": [
+            [
+                "1057fad2d44c475c"
+            ],
+            [
+                "055d97cd3b990c28"
+            ]
+        ]
+    },
+    {
+        "id": "1057fad2d44c475c",
+        "type": "influxdb out",
+        "z": "a64e3f52adae430a",
+        "influxdb": "445eded65c8f51ca",
+        "name": "Database Insert",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "myorg",
+        "bucket": "iot_data",
+        "x": 660,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "055d97cd3b990c28",
+        "type": "mqtt out",
+        "z": "a64e3f52adae430a",
+        "name": "",
+        "topic": "data/energy_remain",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "21cc205bd493533c",
+        "x": 680,
+        "y": 480,
+        "wires": []
+    }
+]

@@ -1,0 +1,112 @@
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Power Monitor Dashboard</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
+
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <div class="header-left">
+                    <h1>⚡ Panel Monitoring Listrik</h1>
+                    <div class="branding">Custom Dashboard by <strong>Kelompok 13 - SIBI</strong></div>
+                </div>
+                <div class="header-info">
+                    <div id="status" class="status disconnected">Disconnected</div>
+                    <div id="mqttDebug" class="mqtt-debug">MQTT: --</div>
+                </div>
+            </header>
+
+            <!-- Top Row: Hero Quota + Relay Control -->
+            <div class="top-row">
+                <!-- Hero: Sisa Kuota kWh -->
+                <div id="heroQuota" class="hero hero-blue">
+                    <div class="hero-content">
+                        <h2>Sisa Kuota</h2>
+                        <div class="quota-value"><span id="quota-remaining">--</span> kWh</div>
+                    </div>
+                </div>
+
+                <!-- Relay Card: Accent Control Card -->
+                <div class="relay-card" id="relayCard" role="region" aria-label="Kontrol Relay">
+                    <div class="relay-left">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M7 2v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M17 2v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 11v11" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 11h14v2a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-2z" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="relay-body">
+                        <div class="relay-title">Relay Utama</div>
+                        <div class="relay-sub">Kontrol mematikan/menghidupkan beban</div>
+                        <div class="relay-controls">
+                            <label class="switch big">
+                                <input type="checkbox" id="relayToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <div class="relay-meta">
+                                <div id="relayStatus" class="relay-status">ON</div>
+                                <div id="relayLast" class="relay-last">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Tegangan (V)</h3>
+                    <div class="value" id="val-volt">0</div>
+                </div>
+                <div class="card">
+                    <h3>Arus (A)</h3>
+                    <div class="value" id="val-amp">0</div>
+                </div>
+                <div class="card">
+                    <h3>Daya (W)</h3>
+                    <div class="value" id="val-watt">0</div>
+                </div>
+                <div class="card">
+                    <h3>Energi (kWh)</h3>
+                    <div class="value" id="val-kwh">0</div>
+                </div>
+                <div class="card">
+                    <h3>Freq (Hz)</h3>
+                    <div class="value" id="val-freq">0</div>
+                </div>
+                <div class="card">
+                    <h3>PF</h3>
+                    <div class="value" id="val-pf">0</div>
+                </div>
+            </div>
+
+            <!-- History Chart Section -->
+            <div class="chart-section history-section">
+                <div class="chart-header">
+                    <div class="chart-title-wrapper">
+                        <h3>Riwayat Penggunaan</h3>
+                        <p class="chart-subtitle" id="chartSubtitle"></p>
+                    </div>
+                    <div class="graph-toggle">
+                        <button id="btnHourly" class="graph-btn active" onclick="requestGraph('hourly')">Per Jam (24h)</button>
+                        <button id="btnDaily" class="graph-btn" onclick="requestGraph('daily')">Per Hari (30d)</button>
+                    </div>
+                </div>
+                <div class="chart-legend-container" id="chartLegendContainer"></div>
+                <div class="chart-scroll-wrapper" id="chartScrollWrapper">
+                    <div class="chart-inner" id="chartInner">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="app.js"></script>
+    </body>
+</html>
