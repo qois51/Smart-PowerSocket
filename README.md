@@ -1,8 +1,8 @@
-# ⚡ Smart Power Socket: IoT-Based Energy Monitoring & Control
+# ⚡ Smart Power Socket
 Smart Power Socket is an intelligent IoT energy management system designed to monitor electricity usage in real-time and enforce consumption limits through an automated energy quota-based cutoff mechanism.
 
-[View 3d Model](./docs/smart_power_socket_final.stl)
-
+<img src="./docs/render_final_smart_power_socket.png" alt="3D Model Render" width="50%">
+    
 ## 🌟 Key Features
  - Real-Time Monitoring: Tracks Voltage (V), Current (A), Active Power (W), Frequency (Hz), and Power Factor (PF).
 - Quota Management: Automatically disconnects the power supply via a relay once the pre-allocated energy quota reaches zero.
