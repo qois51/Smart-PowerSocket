@@ -59,3 +59,15 @@ logs/
 
 # Docker volumes and data
 docker-compose.override.yml
+
+# Node-RED data
+server/nodered_data/flows_cred.json
+server/nodered_data/.npm/_cacache/
+server/node_modules/
+*.log
+server/nodered_data/flows_cred.json
+server/nodered_data/.flows_cred.json.backup
+server/nodered_data/.config.runtime.json.backup
+server/nodered_data/.config.runtime.json
+server/nodered_data/.config.json.backup
+server/nodered_data/.flows.json.backup
