@@ -18,8 +18,8 @@ nodered_data/flows_cred.json
 nodered_data/.npm/_cacache/
 
 # Mosquitto MQTT data and logs
-mosquitto/data/
-mosquitto/log/
+server/mosquitto/data/
+server/mosquitto/log/
 
 # IDE and Editor files
 .vscode/
